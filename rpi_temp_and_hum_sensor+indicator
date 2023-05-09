@@ -1,8 +1,6 @@
 import time
 import math
 import paho.mqtt.client as mqtt
-from datetime import datetime
-import socket
 import grovepi
 from grovepi import *
 from grove_rgb_lcd import *
