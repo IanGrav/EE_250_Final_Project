@@ -11,18 +11,20 @@ HOW TO COMPILE:
 To compile my project, first you need an MQTT-Broker up and running. I installed Eclipse Mosquitto on my Windows laptop, 
 editing the network firewall to allow other computers to connect to mine and editing the Mosquitto configuration file, 
 adding "allow_anonymous_true" and "listener 1883" (the port I was using) in order to get it up and running functionally 
-(simply open Windows powershell as an adminstrator and type "net start mosquitto" to begin the MQTT-Broker service. 
-However, if you have an MQTT-Broker up and runnign already, that will do as well. I originally had the IP adress and port 
+(simply open Windows powershell as an adminstrator and type "net start mosquitto" to begin the MQTT-Broker service). 
+However, if you have an MQTT-Broker up and running already, that will do as well. I originally had the IP adress and port 
 number of my MQTT-Broker hard coded into my python scripts, but have since edited them so that the user enters the IP adress 
 and port number of the MQTT-Broker they wish to connect to. So just enter those in the terminal upon running the scripts 
-and they should work. Both Scripts work essentially independently of the other, meaning you don't need one up for the other 
-to begin, so starting them in either order works. just scp the rpi script to an rpi with all of the required libraries installed
-and it can be run, and clone the VM script to an ubuntu machine that has all of the required libraries installed and that 
-should run as well.
+and they should connect to your MQTT-Broker and work. Both Scripts work essentially independently of the other, meaning you don't 
+need one up for the other to begin, so starting them in either order works. just scp the rpi script to an rpi with all of the 
+required libraries installed and it can be run, and clone the VM script to an ubuntu machine that has all of the required libraries 
+installed and that should run as well.
 
 
 
-  sensor side:
+All external libraries required are listed below:
+
+  sensor (Rpi) side:
   
     required software:
     
@@ -43,9 +45,10 @@ should run as well.
       import grovepi
       from grovepi import *
       from grove_rgb_lcd import *
-      
-      
-  controller side:
+  
+  
+  
+  controller (VM) side:
     
     required software:
       
