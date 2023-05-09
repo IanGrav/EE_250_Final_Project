@@ -8,6 +8,9 @@ Video Demonstration link:
 
 
 HOW TO COMPILE:
+To compile my project, first you need an MQTT-Broker up and running. I installed Eclipse Mosquitto on my Windows laptop, editing the network firewall to allow other computers to connect to mine and editing the Mosquitto configuration file, adding "allow_anonymous_true" and "listener 1883" (the port I was using) in order to get it up and running functionally (simply open Windows powershell as an adminstrator and type "net start mosquitto" to begin the MQTT-Broker service. However, if you have an MQTT-Broker up and runnign already, that will do as well. I originally had the IP adress and port number of my MQTT-Broker hard coded into my python scripts, but have since edited them so that the user enters the IP adress and port number of the MQTT-Broker they wish to connect to. So just enter those in the terminal upon running the scripts and they should work. Both Scripts work essentially independently of the other, meaning you don't need one up for the other to begin, so starting them in either order works.
+
+
 
   sensor side:
   
@@ -22,7 +25,7 @@ HOW TO COMPILE:
           curl -kL dexterindustries.com/update_grovepi | bash
   
   
-python library imports:
+    python library imports:
     
       import time
       import math
@@ -35,4 +38,27 @@ python library imports:
   controller side:
     
     required software:
+      
+      Eclipse paho-mqtt:
+        install with:
+          pip install paho-mqtt
+          
+      Plotly Express:
+        install with:
+          pip install plotly_express==0.4.0
+      
+      Pandas:
+        install with:
+          pip install pandas
+      
+      Kaleido:
+        install with:
+          pip install -U kaleido
     
+    
+    python library imports:
+      
+      import paho.mqtt.client as mqtt
+      import time
+      import pandas as pd
+      import plotly.express as px
