@@ -1,6 +1,4 @@
 import paho.mqtt.client as mqtt
-from datetime import datetime
-import socket
 import time
 import pandas as pd
 import plotly.express as px
@@ -53,9 +51,9 @@ def on_connect(client, userdata, flags, rc):
 
 # create a client object
 client = mqtt.Client()
-#attach the on_connect() callback function defined above to the mqtt client
+# attach the on_connect() callback function defined above to the mqtt client
 client.on_connect = on_connect
-#attach a default callback which we defined above for incoming mqtt messages
+# attach a default callback which we defined above for incoming mqtt messages
 client.on_message = on_message
 # register a custom callback for the temperature and humidity csv
 client.message_callback_add("temperature_humidity", on_message_from_temperature_humidity)
@@ -66,7 +64,7 @@ port_num = int(input("Enter the port number you will be connecting to: "))
 # connect to the entered host and port number, set keepalive to 60 to keep
 # the connection up by sending a message every 60 seconds
 client.connect(host=host_ip, port=port_num, keepalive=60)
-# start client loop so paho-mqtt will open new thread to handle MQTT messages
+# start client loop so paho-mqtt will open a new thread to handle MQTT messages
 client.loop_start()
 time.sleep(1)
 
@@ -156,7 +154,7 @@ while True:
             interval = input("Entry: ").strip()
             while not (interval.replace(".", "", 1).isdigit()):
                 print("That is not a valid entry, please enter again.")
-                interval = input("Entry:")
+                interval = input("Entry: ").strip()
             # publish their entry under the correct topic so the rpi receives the update
             client.publish("interval", f"{interval}")
             # inform the user their update has been made
@@ -210,9 +208,9 @@ while True:
         if entry == "g":
             # ask the user if they want their graph to be by seconds, minutes, or hours
             # loop unitl they choose a valid option
-            time_unit = input("Choose a time unit for your graph").strip().lower()
+            time_unit = input("Choose a time unit for your graph (seconds: s, minutes: m, or hours: h): ").strip().lower()
             while not (time_unit in time_options):
-                time_unit = input("Choose a time unit for your graph").strip().lower()
+                time_unit = input("Choose a time unit for your graph (seconds: s, minutes: m, or hours: h): ").strip().lower()
             # take the measurement arrays by value at the moment the user enters "g"
             temp_c_snapshot = temperature_over_time[:]
             humidity_snapshot = humidity_over_time[:]
@@ -260,6 +258,7 @@ while True:
             # save the bar graph to the current working directory
             fig.write_image("conditions_graph.png")
             # open a link which will contain an interactive graph for the user
+            # (possible through kaleido library)
             fig.show()
             # free up space
             temp_c_snapshot.clear()
