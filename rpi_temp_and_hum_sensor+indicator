@@ -1,0 +1,177 @@
+import time
+import math
+import paho.mqtt.client as mqtt
+from datetime import datetime
+import socket
+import grovepi
+from grovepi import *
+from grove_rgb_lcd import *
+
+
+# setting default values for target temp, target humidity, and measurement interval,
+# all of which can be updated from the VM controller publishing to the MQTT broker
+# under their respective topics
+target_hum = 50.0
+target_temp = 23.0
+interval = 1.0
+
+# define function to be executed when the client receives connection 
+# acknowledgement packet from the server
+def on_connect(client, userdata, flags, rc):
+    # display to the terminal that the rpi connected to the MQTT broker
+    # newlines for visibility
+    print("\n\n\n\n")
+    print("Connected to server (i.e., broker) with result code "+str(rc))
+    print("\n\n\n\n")
+    # subscribe to all necessary topics
+    # (these facilitate control functions from the VM node)
+    client.subscribe("target_humidity")
+    client.subscribe("target_temperature")
+    client.subscribe("interval")
+
+# define default message callback (not used in this project)
+def on_message(client, userdata, message):
+    print("Default callback - topic: " + message.topic + "   msg: " + str(message.payload, "utf-8"))
+
+# custom callback for messages on target humidity published to the MQTT broker
+def on_message_from_target_hum(client, userdata, message):
+    # receive the message, decode it and save it in a variable
+    humidity_float = message.payload.decode()
+    # using global variable for target humidity so it can be accessed
+    # outside of this function
+    global target_hum
+    # save target humidity as a float for comparison to the humidity being measured
+    target_hum = float(humidity_float)
+    # newlines for visibility
+    print("\n\n\n\n")
+    # indicate that a mesage from the VM on the topic of target humidity is being received
+    print("Target Humidity Received:", str(target_hum) + "%")
+    print("\n\n\n\n")
+
+# custom callback for messages on target temperature published to the MQTT broker
+def on_message_from_target_temp(client, userdata, message):
+    # receive the message, cast it as an int, and return it
+    temp_float = message.payload.decode()
+    # using global variable for target temperature so it can be accessed
+    # outside of this function
+    global target_temp
+    # save target temperature as a float for comparison to the temperature being measured
+    target_temp = float(temp_float)
+    # newlines for visibility
+    print("\n\n\n\n")
+    # indicate that a mesage from the VM on the topic of target temperature is being received
+    print("Target Temperature Received:", str(target_temp), "C")
+    print("\n\n\n\n")
+
+# custom callback for messages on the measurement interval published to the MQTT broker
+def on_message_from_interval(client, userdata, message):
+    # receive the message, cast it as an int, and return it
+    interval_float = message.payload.decode()
+    # using global variable for target temperature so it can be accessed
+    # outside of this function
+    global interval
+    # save the interval as a float for comparison against the curent time (time.time())
+    interval = float(interval_float)
+    # newlines for visibility
+    print("\n\n\n\n")
+    # indicate that a mesage from the VM on the topic of interval is being received
+    print("New Interval Received:", str(interval), "seconds")
+    print("\n\n\n\n")
+
+# connect the temperature and humidity sensor to digital port 7.
+temp_humidity_sensor = 7
+# connect the LED to digial port 4
+led = 4
+# set the LED port (D4) to output
+pinMode(led,"OUTPUT")
+# this is the temperature and humidity sensor type
+# the Grove Base Kit comes with a blue sensor (DHT11) and not a white one (DHT22)
+# the blue sensor is 0, and the white sensor is 1
+blue = 0
+# set I2C to use the hardware bus
+grovepi.set_bus("RPI_1")
+time.sleep(1)
+# set the Vcc of the grove interface to 5v
+grove_vcc = 5
+
+# create a client object
+client = mqtt.Client()
+# attach the on_connect() callback function defined above to the mqtt client
+client.on_connect = on_connect
+# attach a default callback which we defined above for incoming mqtt messages
+client.on_message = on_message
+# register a custom callback for the target humidity:
+client.message_callback_add("target_humidity", on_message_from_target_hum)
+# register a custom callback for the target temperature:
+client.message_callback_add("target_temperature", on_message_from_target_temp)
+# register a custom callback for the measurement interval:
+client.message_callback_add("interval", on_message_from_interval)
+# get the MQTT server host IP adress from the user
+# (I used Mosquitto on my computer running Windows as a broker)
+host_ip = input("Enter the IP adress of the MQTT broker you will be using: ")
+port_num = int(input("Enter the port number you will be connecting to: "))
+# connect to the entered host and port number, set keepalive to 60 to keep
+# the connection up by sending a message every 60 seconds
+client.connect(host=host_ip, port=port_num, keepalive=60)
+# start client loop so paho-mqtt will open new thread to handle MQTT messages
+client.loop_start()
+
+# little boot-up sequence for the rpi
+setText("Temperature & \nHumidity Gauge")
+setRGB(255,255,255)
+time.sleep(5)
+setText("")
+
+# set start time to be past the measurement interval initially so that the 
+# rpi posts the temperature and humidity on the first loop, then enters
+# the waiting timer
+start_time = time.time() - interval
+
+while True:
+    try:
+        # if the temperature and humidity are numbers, 
+        [temp,humidity] = grovepi.dht(temp_humidity_sensor,blue)  
+        if (not math.isnan(temp)) and (not math.isnan(humidity)):
+            # print the temperature and humidity
+            print("Temp:", str(temp) + "C")
+            print("Humidity:", str(humidity) + "%")
+            # use function that updates text without refreshing the lcd
+            setText_norefresh("Temp: %.02f C \nHum: %.02f%%"%(temp, humidity))
+            # if the humidity is greater than or equal to the target humidity,
+            # make the LCD green, otherwise make it red.
+            if humidity >= target_hum:
+                setRGB(0,255,0)
+            if humidity < target_hum:
+                setRGB(255,0,0)
+            # if the temperature is greater than or equal to the target 
+            # temperature, turn on the LED, otehrwise keep it off
+            if temp >= target_temp:
+                digitalWrite(led,1)
+            if temp < target_temp:
+                digitalWrite(led,0)
+
+        # once the measurement interval is reached, post the temperature and 
+        # humidity to the MQTT broker under the topic "temperature_humidity"
+        if time.time() - start_time >= interval:
+            # publish both measurements together as comma separated values
+            temp_humitity_csv = str(temp) + "," + str(humidity)
+            # newlines for visibility
+            print("\n\n")
+            print("publishing temp and humidity")
+            print("\n\n")
+            client.publish("temperature_humidity", f"{temp_humitity_csv}")
+            # reset the interval wait timer
+            start_time = time.time()
+
+    # handle possible exceptions
+    except IOError:
+        print ("Error")
+    except Exception as e:
+        print ("Error:{}".format(e))
+    # when the user hits Ctrl+C, print goodbye and break the loop, quitting the program
+    except KeyboardInterrupt:
+        print("\n\nGoodbye!\n")
+        break
+    
+    # wait in order not to overload the i2c bus
+    time.sleep(0.1)
