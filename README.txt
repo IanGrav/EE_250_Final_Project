@@ -19,9 +19,9 @@ port number of the MQTT-Broker they wish to connect to. So just enter those in t
 the scripts and they should connect to your MQTT-Broker and work. Both Scripts work essentially 
 independently of the other, meaning you don't need one up for the other to begin, so starting them 
 in either order works. Just scp the rpi script to an rpi with all of the required libraries installed 
-and the file can be run on the rpi with a simpe "python3 <filename>.py" Then clone the VM script to 
+and the file can be run on the rpi with a simple "python3 <filename>.py" Then clone the VM script to 
 an ubuntu machine that has all of the required libraries installed and that should run with a simple 
-with a simpe "python3 <filename>.py" as well.
+with a simple "python3 <filename>.py" as well.
 
 
 
